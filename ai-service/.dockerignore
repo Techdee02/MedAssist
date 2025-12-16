@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+venv/
+env/
+.venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logs
+logs/
+*.log
+
+# Models (don't include in image - download at runtime)
+models_cache/
+*.bin
+*.safetensors
+*.onnx
+
+# Development
+.env.example
+.env.local
+.git/
+.gitignore
+README.md
+*.md
+!requirements.txt
+
+# Test files
+tests/
+demo_*.py
+test_*.py
+
+# Documentation
+docs/
+*.pdf

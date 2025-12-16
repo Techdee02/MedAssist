@@ -1,0 +1,82 @@
+# Render Blueprint for MedAssist AI Service
+# Deploy to Render Free Tier: https://render.com
+
+services:
+  - type: web
+    name: medassist-ai-service
+    env: docker
+    region: oregon  # or singapore for lower latency
+    plan: free  # FREE TIER - $0/month
+    
+    # Docker configuration
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Environment variables
+    envVars:
+      # Application
+      - key: APP_NAME
+        value: MedAssist AI Service
+      - key: APP_VERSION
+        value: 1.0.0
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      
+      # Server (Render sets PORT automatically)
+      - key: HOST
+        value: 0.0.0.0
+      - key: WORKERS
+        value: 1  # Free tier: single worker
+      
+      # AI Model Configuration
+      - key: USE_LLM
+        value: true
+      - key: MODEL_NAME
+        value: llama-3.3-70b-versatile
+      - key: MAX_TOKENS
+        value: 512
+      - key: TEMPERATURE
+        value: 0.7
+      
+      # Groq API (FREE - add your key)
+      - key: GROQ_API_KEY
+        sync: false  # Set in Render dashboard as secret
+      
+      # Azure Document Intelligence (Optional - pay-per-use)
+      - key: AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT
+        sync: false  # Set in Render dashboard as secret
+      - key: AZURE_DOCUMENT_INTELLIGENCE_KEY
+        sync: false  # Set in Render dashboard as secret
+      
+      # Azure AI Translator (Optional - pay-per-use)
+      - key: AZURE_TRANSLATOR_ENDPOINT
+        sync: false  # Set in Render dashboard as secret
+      - key: AZURE_TRANSLATOR_KEY
+        sync: false  # Set in Render dashboard as secret
+      - key: AZURE_TRANSLATOR_REGION
+        value: southafricanorth
+      
+      # Safety
+      - key: ENABLE_SAFETY_CHECKS
+        value: true
+      - key: REQUIRE_HUMAN_REVIEW_THRESHOLD
+        value: 7
+      - key: LOG_AUDIT_TRAIL
+        value: true
+    
+    # Health check endpoint
+    healthCheckPath: /api/v1/health
+    
+    # Auto-deploy from GitHub
+    autoDeploy: true
+    
+    # Build configuration (use production requirements)
+    buildCommand: pip install -r requirements.production.txt
+    
+    # Free tier limitations
+    # - 750 hours/month (enough for 24/7)
+    # - 512 MB RAM
+    # - Sleeps after 15 min inactivity
+    # - Auto-wakes on request (~30s delay)
