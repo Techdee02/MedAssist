@@ -101,7 +101,7 @@ async def process_message(request: ProcessMessageRequest):
             symptom_intake = get_symptom_intake_agent()
             symptom_data = symptom_intake.extract_symptom_info(
                 message=request.message,
-                existing_data={}
+                current_data={}
             )
             
             # Check if we have enough information for triage
