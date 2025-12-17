@@ -21,7 +21,10 @@ export interface LoginResponse {
   user: {
     id: string
     email: string
+    firstName?: string
+    lastName?: string
     clinicId: string
+    clinicName?: string
     role: string
   }
 }
