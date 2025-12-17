@@ -61,14 +61,14 @@ export function TileCard({ level, count }: TileCardProps) {
 
   return (
     <Card className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-gray-200 ${cfg.bg}`}>
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="flex items-center justify-between">
-          <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${cfg.iconBg} group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`h-6 w-6 ${cfg.iconColor}`} />
+          <div className={`flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl ${cfg.iconBg} group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`h-5 w-5 md:h-6 md:w-6 ${cfg.iconColor}`} />
           </div>
           <div className="text-right">
-            <p className={`text-3xl font-bold ${cfg.text}`}>{count}</p>
-            <p className="text-sm font-medium text-gray-600">{cfg.label}</p>
+            <p className={`text-2xl md:text-3xl font-bold ${cfg.text}`}>{count}</p>
+            <p className="text-xs md:text-sm font-medium text-gray-600">{cfg.label}</p>
           </div>
         </div>
       </div>

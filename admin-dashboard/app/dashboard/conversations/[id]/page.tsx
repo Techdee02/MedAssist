@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConversationList } from "@/components/ConversationList"
 import { Conversation, Message, MessageRole, TriageLevel } from "@/types"
-import { Phone, Calendar, CheckCircle, AlertTriangle, Clock, UserCircle, Loader2, Activity } from "lucide-react"
+import { Phone, Calendar, CheckCircle, AlertTriangle, Clock, UserCircle, Loader2, Activity, Info, ChevronLeft } from "lucide-react"
 import { api } from "@/lib/api"
 
 export default function ConversationPage() {
@@ -18,6 +18,7 @@ export default function ConversationPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [allConversations, setAllConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,9 +86,9 @@ export default function ConversationPage() {
   const lastAIMessage = aiMessages[aiMessages.length - 1]
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-0 animate-fade-in">
-      {/* Left Sidebar - Conversations List */}
-      <div className="w-80 border-r border-gray-200 bg-white">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] gap-0 animate-fade-in">
+      {/* Left Sidebar - Conversations List (Hidden on mobile) */}
+      <div className="hidden lg:block lg:w-80 border-r border-gray-200 bg-white">
         <div className="h-full overflow-y-auto p-4">
           <ConversationList 
             conversations={allConversations.filter(c => c.status === 'active')} 
@@ -99,16 +100,36 @@ export default function ConversationPage() {
 
       {/* Main Chat Area */}
       <div className="flex flex-1 flex-col bg-gray-50">
-        <div className="glass sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 shadow-md">
-              <UserCircle className="h-6 w-6 text-white" />
+        <div className="glass sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 px-3 md:px-6 py-3 md:py-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+            <a 
+              href="/dashboard"
+              className="lg:hidden flex items-center justify-center h-9 w-9 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-700" />
+            </a>
+            <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 shadow-md flex-shrink-0">
+              <UserCircle className="h-5 w-5 md:h-6 md:w-6 text-white" />
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">{conversation.patientName}</h2>
-              <p className="text-sm text-gray-600">{conversation.patientPhone}</p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base md:text-lg font-semibold text-gray-900 truncate">{conversation.patientName}</h2>
+              <p className="text-xs md:text-sm text-gray-600 truncate">{conversation.patientPhone}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="hidden md:block">
+              <TriageBadge level={conversation.triageLevel} />
+            </div>
+            <button
+              onClick={() => setShowInfo(!showInfo)}
+              className="lg:hidden flex items-center justify-center h-9 w-9 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <Info className="h-5 w-5 text-gray-700" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="md:hidden px-3 py-2 border-b border-gray-200 bg-white">
           <TriageBadge level={conversation.triageLevel} />
         </div>
         
@@ -117,8 +138,20 @@ export default function ConversationPage() {
         <SendMessageForm onSend={handleSendMessage} />
       </div>
 
-      {/* Right Sidebar - Patient Info & Actions */}
-      <div className="w-80 space-y-4 overflow-y-auto border-l border-gray-200 bg-white p-4">
+      {/* Right Sidebar - Patient Info & Actions (Desktop always visible, Mobile as drawer) */}
+      <div className={`
+        fixed lg:static inset-y-0 right-0 z-50 w-full sm:w-96 lg:w-80
+        transform transition-transform duration-300 lg:transform-none
+        ${showInfo ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        space-y-4 overflow-y-auto border-l border-gray-200 bg-white p-4
+      `}>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setShowInfo(false)}
+          className="lg:hidden absolute top-4 right-4 flex items-center justify-center h-9 w-9 rounded-lg hover:bg-gray-100 transition-colors z-10"
+        >
+          <ChevronLeft className="h-5 w-5 text-gray-700" />
+        </button>
         <div className="glass rounded-xl border border-gray-200 overflow-hidden">
           <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3">
             <div className="flex items-center gap-2">

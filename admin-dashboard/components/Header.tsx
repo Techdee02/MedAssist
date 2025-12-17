@@ -1,18 +1,30 @@
 "use client"
 
-import { Bell } from "lucide-react"
+import { Bell, Menu } from "lucide-react"
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick: () => void
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   return (
-    <header className="glass sticky top-0 z-10 border-b border-gray-200 px-6 py-4">
+    <header className="glass sticky top-0 z-10 border-b border-gray-200 px-4 md:px-6 py-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Dashboard
-          </h2>
-          <p className="text-sm text-gray-600">Welcome back, Admin</p>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onMenuClick}
+            className="lg:hidden rounded-lg p-2 hover:bg-gray-100 transition-colors"
+          >
+            <Menu className="h-6 w-6 text-gray-700" />
+          </button>
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Dashboard
+            </h2>
+            <p className="text-xs md:text-sm text-gray-600 hidden sm:block">Welcome back, Admin</p>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <button className="relative rounded-full p-2 hover:bg-gray-100 transition-colors">
             <Bell className="h-5 w-5 text-gray-700" />
             <span className="absolute right-1 top-1 flex h-2 w-2">
@@ -20,12 +32,12 @@ export function Header() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
             </span>
           </button>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="text-right hidden md:block">
               <p className="text-sm font-medium text-gray-900">Admin User</p>
               <p className="text-xs text-gray-500">Healthcare Provider</p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold shadow-md">
+            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold shadow-md">
               A
             </div>
           </div>

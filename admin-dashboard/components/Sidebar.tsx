@@ -35,7 +35,12 @@ const sidebarItems = [
   }
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -46,10 +51,23 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-white/95 backdrop-blur-xl">
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed lg:static inset-y-0 left-0 z-50 flex h-full w-72 flex-col border-r border-gray-200 bg-white/95 backdrop-blur-xl transition-transform duration-300 lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
       {/* Header with gradient */}
       <div className="relative overflow-hidden border-b border-gray-200 bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 px-6 py-4">
-        <Link href="/dashboard" className="relative z-10 flex items-center gap-3">
+        <Link href="/dashboard" className="relative z-10 flex items-center gap-3" onClick={onClose}>
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-md">
             <Activity className="h-6 w-6 text-white" />
           </div>
@@ -63,14 +81,21 @@ export function Sidebar() {
       {/* Navigation */}
       <div className="flex-1 overflow-auto py-6">
         <nav className="space-y-1 px-3">
-          {sidebarItems.map((item) => {
+          {sidebarItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
             
             return (
               <Link
-                key={item.href}
+                key={`${item.title}-${index}`}
                 href={item.disabled ? "#" : item.href}
+                onClick={(e) => {
+                  if (item.disabled) {
+                    e.preventDefault()
+                  } else {
+                    onClose()
+                  }
+                }}
                 className={cn(
                   "group relative flex flex-col gap-1.5 rounded-xl px-4 py-3.5 transition-all duration-300",
                   isActive 
@@ -79,7 +104,6 @@ export function Sidebar() {
                   item.disabled && "cursor-not-allowed opacity-50"
                 )}
                 aria-disabled={item.disabled}
-                onClick={(e) => item.disabled && e.preventDefault()}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
@@ -129,5 +153,6 @@ export function Sidebar() {
         </button>
       </div>
     </div>
+    </>
   )
 }

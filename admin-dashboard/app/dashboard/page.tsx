@@ -73,9 +73,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 lg:grid-cols-5">
         <TileCard level={TriageLevel.CRITICAL} count={stats[TriageLevel.CRITICAL]} />
         <TileCard level={TriageLevel.HIGH} count={stats[TriageLevel.HIGH]} />
         <TileCard level={TriageLevel.MEDIUM} count={stats[TriageLevel.MEDIUM]} />
@@ -84,14 +84,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Filters Section */}
-      <div className="glass rounded-xl border border-gray-200 p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-blue-600" />
-          <h3 className="font-semibold text-gray-900">Filters</h3>
+      <div className="glass rounded-xl border border-gray-200 p-3 md:p-4">
+        <div className="flex items-center gap-2 mb-3 md:mb-4">
+          <Filter className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+          <h3 className="text-sm md:text-base font-semibold text-gray-900">Filters</h3>
         </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 md:gap-4">
           <div className="flex flex-wrap gap-2">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(['all', 'active', 'resolved'] as StatusFilter[]).map((status) => (
                 <Button
                   key={status}
@@ -107,8 +107,8 @@ export default function DashboardPage() {
                 </Button>
               ))}
             </div>
-            <div className="h-8 w-px bg-gray-300" />
-            <div className="flex flex-wrap gap-2">
+            <div className="hidden sm:block h-8 w-px bg-gray-300" />
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               {(['all', TriageLevel.CRITICAL, TriageLevel.HIGH, TriageLevel.MEDIUM, TriageLevel.LOW] as TriageFilter[]).map((level) => (
                 <Button
                   key={level}
@@ -125,7 +125,7 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               placeholder="Search by name or phone..."
