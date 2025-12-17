@@ -62,6 +62,8 @@ export class HttpClient {
       // Handle common backend errors with user-friendly messages
       if (message.includes('no session') || message.includes('proxy')) {
         message = 'Login failed: Backend configuration error. Please contact support.'
+      } else if (message.includes('Unable to find') && message.includes('Clinic')) {
+        message = 'Login failed: Your account is not properly linked to a clinic. Please contact support.'
       } else if (message.includes('Invalid credentials') || message.includes('Bad credentials')) {
         message = 'Invalid email or password. Please try again.'
       }
