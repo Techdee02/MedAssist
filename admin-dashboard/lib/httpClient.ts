@@ -57,7 +57,15 @@ export class HttpClient {
 
     // Handle non-2xx responses
     if (!response.ok) {
-      const message = data?.message || data?.error || `HTTP ${response.status} error`
+      let message = data?.message || data?.error || `HTTP ${response.status} error`
+      
+      // Handle common backend errors with user-friendly messages
+      if (message.includes('no session') || message.includes('proxy')) {
+        message = 'Login failed: Backend configuration error. Please contact support.'
+      } else if (message.includes('Invalid credentials') || message.includes('Bad credentials')) {
+        message = 'Invalid email or password. Please try again.'
+      }
+      
       throw new ApiError(response.status, message, data)
     }
 
