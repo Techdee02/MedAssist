@@ -89,8 +89,8 @@ MedAssist is an **AI-powered healthcare assistant** that helps clinics, pharmaci
 | **Database** | PostgreSQL (patient records, conversations, messages) | ✅ **Live** |
 | **Messaging Gateway** | Twilio WhatsApp API (sandbox + production) | 📋 **Implementation Guide Ready** |
 | **Admin Dashboard** | Next.js 14, TypeScript, Tailwind CSS | ✅ **Production Ready** - Mobile Responsive |
-| **Translation** | Azure AI Translator API | 🚧 **Partial** (Credentials needed) |
-| **OCR / Document AI** | Azure Form Recognizer | 🔄 **Planned** |
+| **Translation** | Azure AI Translator API | ✅ **Working** - English ↔ Yoruba/Hausa/Igbo |
+| **Document Extraction** | Azure AI Document Intelligence | ✅ **Working** - OCR + Table Extraction |
 
 ---
 
@@ -161,15 +161,16 @@ MedAssist is an **AI-powered healthcare assistant** that helps clinics, pharmaci
 7. ✅ JWT authentication with auto-logout on 401
 8. ✅ Backend API with PostgreSQL (deployed on Render)
 9. ✅ AI Service with Groq LLM (deployed on Render)
-10. 📋 WhatsApp bot implementation guide (ready for backend integration)
+10. ✅ Multi-language translation (English ↔ Yoruba/Hausa/Igbo)
+11. ✅ Medical document extraction (OCR + structured data from images/PDFs)
+12. 📋 WhatsApp bot implementation guide (ready for backend integration)
 
 ### Phase 2 (In Progress / Planned)
 - 🚧 WhatsApp Twilio integration (guide complete, awaiting implementation)
-- 🚧 Multi-language support - Yoruba, Hausa, Igbo (Azure Translator setup needed)
-- 🔄 Medical document extraction (PDFs, lab reports, prescriptions)
 - 🔄 Automated appointment reminders via WhatsApp/SMS
 - 🔄 Complaint clustering & trend analytics
 - 🔄 Google Sheets / Excel integration
+- 🔄 Advanced document analysis (medication extraction, lab result parsing)
 
 ---
 
