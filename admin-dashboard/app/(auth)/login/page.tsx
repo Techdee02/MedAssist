@@ -133,11 +133,6 @@ export default function LoginPage() {
                 </>
               )}
             </Button>
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Demo credentials: Any email/password
-              </p>
-            </div>
           </CardFooter>
         </form>
       </Card>

@@ -31,25 +31,41 @@ export interface LoginResponse {
 // ============================================================================
 
 interface BackendConversation {
-  conversation_id?: string
-  id?: string
-  patient_phone: string
-  patient_name?: string
-  patient_id?: string
-  clinic_id: string
+  id: string
+  patientId: string
+  patientName: string
+  patientPhone: string
+  triageLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  status: 'ACTIVE' | 'RESOLVED' | 'CLOSED' | 'PENDING'
+  lastMessageAt: string // ISO datetime
+  messageCount?: number
+  preview?: string
+  createdAt: string // ISO datetime
+}
+
+interface BackendConversationDetail {
+  id: string
+  patient: {
+    id: string
+    phone: string
+    firstName?: string
+    lastName?: string
+    clinicId: string
+    registeredAt: string
+  }
+  triageLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  status: 'ACTIVE' | 'RESOLVED' | 'CLOSED' | 'PENDING'
   messages: BackendMessage[]
-  triage_level: string
-  status?: string
-  last_message_at?: string
-  created_at?: string
+  createdAt: string
+  lastMessageAt: string
 }
 
 interface BackendMessage {
-  id?: string
-  role: string
+  id: string
+  role: 'USER' | 'ASSISTANT' | 'ADMIN' | 'SYSTEM'
   content: string
-  timestamp: string
-  triage_level?: string
+  triageLevel?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  timestamp: string // ISO datetime
 }
 
 // ============================================================================
@@ -58,28 +74,43 @@ interface BackendMessage {
 
 function transformMessage(msg: BackendMessage): Message {
   return {
-    id: msg.id || `msg_${Date.now()}_${Math.random()}`,
-    role: msg.role.toUpperCase() as MessageRole,
+    id: msg.id,
+    role: msg.role as MessageRole,
     content: msg.content,
     timestamp: msg.timestamp,
-    triageLevel: msg.triage_level?.toUpperCase() as TriageLevel | undefined,
+    triageLevel: msg.triageLevel as TriageLevel | undefined,
   }
 }
 
 function transformConversation(conv: BackendConversation): Conversation {
-  const id = conv.conversation_id || conv.id || `conv_${Date.now()}`
-  
   return {
-    id,
-    patientId: conv.patient_id || `patient_${id}`,
-    patientName: conv.patient_name || conv.patient_phone || 'Unknown Patient',
-    patientPhone: conv.patient_phone,
-    clinicId: conv.clinic_id,
-    messages: conv.messages?.map(transformMessage) || [],
-    triageLevel: conv.triage_level?.toUpperCase() as TriageLevel || TriageLevel.LOW,
-    status: (conv.status as 'active' | 'resolved') || 'active',
-    lastMessageAt: conv.last_message_at || conv.messages?.[conv.messages.length - 1]?.timestamp || new Date().toISOString(),
-    createdAt: conv.created_at || conv.messages?.[0]?.timestamp || new Date().toISOString(),
+    id: conv.id,
+    patientId: conv.patientId,
+    patientName: conv.patientName,
+    patientPhone: conv.patientPhone,
+    clinicId: '', // Will be set from user context
+    messages: [], // Messages come from detail endpoint
+    triageLevel: conv.triageLevel as TriageLevel,
+    status: conv.status.toLowerCase() as 'active' | 'resolved',
+    lastMessageAt: conv.lastMessageAt,
+    createdAt: conv.createdAt,
+  }
+}
+
+function transformConversationDetail(conv: BackendConversationDetail): Conversation {
+  return {
+    id: conv.id,
+    patientId: conv.patient.id,
+    patientName: conv.patient.firstName && conv.patient.lastName 
+      ? `${conv.patient.firstName} ${conv.patient.lastName}`
+      : conv.patient.phone,
+    patientPhone: conv.patient.phone,
+    clinicId: conv.patient.clinicId,
+    messages: conv.messages.map(transformMessage),
+    triageLevel: conv.triageLevel as TriageLevel,
+    status: conv.status.toLowerCase() as 'active' | 'resolved',
+    lastMessageAt: conv.lastMessageAt,
+    createdAt: conv.createdAt,
   }
 }
 
@@ -135,10 +166,10 @@ export const api = {
    */
   getConversationById: async (id: string): Promise<Conversation> => {
     try {
-      const response = await httpClient.get<BackendConversation>(
+      const response = await httpClient.get<BackendConversationDetail>(
         API_ROUTES.CONVERSATIONS.GET(id)
       )
-      return transformConversation(response)
+      return transformConversationDetail(response)
     } catch (error) {
       console.error('Failed to fetch conversation:', error)
       console.warn('⚠️  Backend not available - returning mock conversation')

@@ -3,14 +3,13 @@
  * Centralized location for all backend API endpoints
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://medassist-23zx.onrender.com'
 
 export const API_ROUTES = {
   // Authentication
   AUTH: {
     LOGIN: `${API_BASE_URL}/api/auth/login`,
-    REFRESH: `${API_BASE_URL}/api/auth/refresh`,
-    LOGOUT: `${API_BASE_URL}/api/auth/logout`,
+    VERIFY: `${API_BASE_URL}/api/auth/verify`,
   },
   
   // Conversations
@@ -22,7 +21,7 @@ export const API_ROUTES = {
   
   // Messages
   MESSAGES: {
-    SEND: `${API_BASE_URL}/api/send-message`, // Backend uses /api/send-message
+    SEND: `${API_BASE_URL}/api/messages/send`,
   },
   
   // Patients (future)
