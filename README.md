@@ -82,15 +82,15 @@ MedAssist is an **AI-powered healthcare assistant** that helps clinics, pharmaci
 
 ## 🤖 Tech Stack
 
-| Component | Technology / Tool |
-|-----------|-------------------|
-| **AI Microservice** | FastAPI (Python), Llama-based LLM |
-| **Backend / Orchestration** | Java (Spring Boot) |
-| **Database** | MongoDB (patient records, appointments, logs), Redis (caching / session state) |
-| **Messaging Gateway** | Meta WhatsApp Cloud API (production) or Twilio Sandbox |
-| **Dashboard** | React (web) / Flutter (mobile) |
-| **Document Storage** | S3 / Blob storage, encrypted |
-| **OCR / Document AI** | Tesseract / Azure Form Recognizer / Google Document AI |
+| Component | Technology / Tool | Status |
+|-----------|-------------------|--------|
+| **AI Microservice** | FastAPI (Python), Groq LLM (Llama 3.3 70B) | ✅ **Live** - [https://medassist-ai-service.onrender.com](https://medassist-ai-service.onrender.com) |
+| **Backend / Orchestration** | Java (Spring Boot), PostgreSQL | ✅ **Live** - [https://medassist-23zx.onrender.com](https://medassist-23zx.onrender.com) |
+| **Database** | PostgreSQL (patient records, conversations, messages) | ✅ **Live** |
+| **Messaging Gateway** | Twilio WhatsApp API (sandbox + production) | 📋 **Implementation Guide Ready** |
+| **Admin Dashboard** | Next.js 14, TypeScript, Tailwind CSS | ✅ **Production Ready** - Mobile Responsive |
+| **Translation** | Azure AI Translator API | 🚧 **Partial** (Credentials needed) |
+| **OCR / Document AI** | Azure Form Recognizer | 🔄 **Planned** |
 
 ---
 
@@ -151,18 +151,25 @@ MedAssist is an **AI-powered healthcare assistant** that helps clinics, pharmaci
 
 ## 🚀 MVP Scope
 
-### Phase 1 (MVP)
-1. WhatsApp auto-replies + appointment booking
-2. Symptom intake → structured report → clinician notification
-3. Basic dashboard: upcoming appointments + weekly summary
-4. Automated reminders for appointments and medication refills
-5. Safety prompts + triage for urgent cases
+### Phase 1 (MVP) - ✅ **COMPLETE**
+1. ✅ Admin dashboard with real-time patient queue and triage levels
+2. ✅ Conversation management with WhatsApp-style interface
+3. ✅ AI-powered symptom intake and triage scoring
+4. ✅ Emergency detection with high-confidence classification
+5. ✅ Real-time polling (5-second intervals) for live updates
+6. ✅ Mobile-responsive design with hamburger menu
+7. ✅ JWT authentication with auto-logout on 401
+8. ✅ Backend API with PostgreSQL (deployed on Render)
+9. ✅ AI Service with Groq LLM (deployed on Render)
+10. 📋 WhatsApp bot implementation guide (ready for backend integration)
 
-### Phase 2 (Future Enhancements)
-- Medical document extraction (PDFs, lab reports, prescriptions)
-- Complaint clustering & trend analytics
-- Google Sheets / Excel integration
-- Multi-language support (Yoruba, Hausa, Igbo)
+### Phase 2 (In Progress / Planned)
+- 🚧 WhatsApp Twilio integration (guide complete, awaiting implementation)
+- 🚧 Multi-language support - Yoruba, Hausa, Igbo (Azure Translator setup needed)
+- 🔄 Medical document extraction (PDFs, lab reports, prescriptions)
+- 🔄 Automated appointment reminders via WhatsApp/SMS
+- 🔄 Complaint clustering & trend analytics
+- 🔄 Google Sheets / Excel integration
 
 ---
 
@@ -210,10 +217,70 @@ MedAssist is an **AI-powered healthcare assistant** that helps clinics, pharmaci
 
 ## 🛠 Getting Started
 
-Coming soon...
+### Prerequisites
+- Node.js 18+ (for admin dashboard)
+- Python 3.11+ (for AI service - optional if using deployed version)
+- Java 17+ (for backend - optional if using deployed version)
+
+### Quick Start - Admin Dashboard
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd MedAssist/admin-dashboard
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local and set:
+# NEXT_PUBLIC_API_URL=https://medassist-23zx.onrender.com
+
+# Run development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) and login with your credentials.
+
+### Quick Start - AI Service (Local Development)
+
+```bash
+cd MedAssist/ai-service
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export GROQ_API_KEY=your_groq_api_key
+
+# Run development server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### WhatsApp Bot Implementation
+
+Backend developers should refer to [WHATSAPP_BOT_IMPLEMENTATION.md](WHATSAPP_BOT_IMPLEMENTATION.md) for complete integration guide including:
+- Twilio setup and configuration
+- Webhook implementation
+- Patient registration flow
+- AI service integration
+- Full Java/Spring Boot code examples
+
+### Production Deployments
+
+| Service | URL | Documentation |
+|---------|-----|---------------|
+| **Backend API** | https://medassist-23zx.onrender.com | [Swagger UI](https://medassist-23zx.onrender.com/swagger-ui/index.html) |
+| **AI Service** | https://medassist-ai-service.onrender.com | [API Docs](https://medassist-ai-service.onrender.com/docs) |
+| **Admin Dashboard** | *Coming Soon* | See [admin-dashboard/README.md](admin-dashboard/README.md) |
 
 ---
 
 ## 📄 License
 
-Coming soon...
+MIT License - See LICENSE file for details

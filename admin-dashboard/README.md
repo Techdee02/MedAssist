@@ -1,31 +1,38 @@
 # MedAssist Admin Dashboard
 
-A professional, feature-rich admin dashboard for managing patient conversations and triage levels in healthcare clinics.
+> **Production-ready admin dashboard for managing patient conversations and triage levels in healthcare clinics.**
+
+🎉 **Status: 100% Complete & Production Ready**
 
 ## 🚀 Features
 
 ### Authentication
-- ✅ Secure login with JWT
+- ✅ Secure login with JWT (integrated with production backend)
 - ✅ Remember Me functionality (30-day sessions)
 - ✅ Auto-redirect for authenticated users
 - ✅ Protected routes with middleware
+- ✅ Auto-logout on 401 (token expiration)
+- ✅ Dynamic user info from JWT (firstName, lastName, clinicName)
 
 ### Dashboard
-- ✅ Real-time triage statistics
+- ✅ Real-time triage statistics (5-second polling)
 - ✅ Color-coded urgency levels (Critical, High, Medium, Low)
 - ✅ Patient queue with smart filtering
 - ✅ Search by name or phone number
-- ✅ Status filters (Active/Resolved)
+- ✅ Status filters (Active/Resolved/Closed/Pending)
 - ✅ Triage level filters
+- ✅ **Mobile responsive** with hamburger menu
+- ✅ Graceful error handling (works even when backend is down)
 
 ### Conversation View
 - ✅ WhatsApp-style 3-panel layout
-- ✅ Left: Active conversations sidebar
+- ✅ Left: Active conversations sidebar (hidden on mobile)
 - ✅ Center: Message thread
-- ✅ Right: Patient info & actions
+- ✅ Right: Patient info & actions (slide-in drawer on mobile)
 - ✅ Send messages as admin
 - ✅ AI recommendations display
 - ✅ Symptom summary
+- ✅ Back button for mobile navigation
 
 ### Patient Management
 - ✅ Patient information cards
@@ -33,6 +40,13 @@ A professional, feature-rich admin dashboard for managing patient conversations 
 - ✅ Mark conversations as resolved
 - ✅ Escalate to doctor
 - ✅ Schedule appointments
+
+### Mobile Responsiveness
+- ✅ Hamburger menu with slide-in drawer
+- ✅ Responsive grid layouts (1 col mobile → 5 cols desktop)
+- ✅ Touch-friendly tap targets
+- ✅ Mobile-optimized conversation view
+- ✅ Compact header with truncated text
 
 ## 🎨 Design Highlights
 
@@ -50,6 +64,10 @@ A professional, feature-rich admin dashboard for managing patient conversations 
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
 - **Date**: date-fns
+- **HTTP Client**: Fetch API with custom interceptors
+- **Authentication**: JWT Bearer tokens
+- **Backend API**: https://medassist-23zx.onrender.com
+- **AI Service**: https://medassist-ai-service.onrender.com
 
 ## 📦 Installation
 
@@ -72,13 +90,15 @@ npm run build
 npm run start
 ```
 
-## 🔐 Demo Credentials
+## 🔐 Login Credentials
 
-For demonstration purposes, the app accepts **any email and password**.
+**Production Backend Integration**: The dashboard now connects to the real backend API.
 
-Example:
-- Email: `admin@clinic.com`
-- Password: `anything`
+**Test Account** (if available from backend team):
+- Email: `admin@clinic.com` (or your registered email)
+- Password: Your registered password
+
+**Note**: Authentication is handled by the production backend at https://medassist-23zx.onrender.com. Contact your backend administrator for valid credentials.
 
 ## 📱 Usage Guide
 
@@ -146,18 +166,34 @@ admin-dashboard/
 ## 🔧 Configuration
 
 ### Environment Variables
+
+Create a `.env.local` file in the `admin-dashboard` directory:
+
 ```bash
-# .env.local
-NEXT_PUBLIC_API_URL=https://your-api-url.com
+# Production Backend API
+NEXT_PUBLIC_API_URL=https://medassist-23zx.onrender.com
+
+# For local backend development (optional)
+# NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-## 📊 Mock Data
+**Note**: The `.env.example` file is provided as a template.
 
-The app includes a mock API (`lib/api.ts`) with:
-- 3 sample conversations
-- Different triage levels
-- Simulated network delays
-- In-memory state management
+## 📊 Data Source
+
+**Production API Integration**: The dashboard fetches real data from:
+- **Backend API**: https://medassist-23zx.onrender.com
+- **AI Service**: https://medassist-ai-service.onrender.com
+
+**Fallback Behavior**: If the backend is unavailable, the app gracefully handles errors:
+- Shows user-friendly error messages
+- Returns empty arrays instead of crashing
+- Displays offline indicators
+
+**Real-time Updates**: 
+- 5-second polling interval (as per PRD specification)
+- Automatic data refresh on conversation page
+- Live triage statistics
 
 ## 🚦 Workflow
 
@@ -182,16 +218,43 @@ The app includes a mock API (`lib/api.ts`) with:
 - ✅ Responsive Design
 - ✅ Professional UI/UX
 
-## 🎯 Next Steps (Post-MVP)
+## 🎯 Production Deployment
 
-- [ ] Connect to real backend API
-- [ ] Implement WebSocket for real-time updates
-- [ ] Add analytics dashboard
+### Pre-Deployment Checklist
+- ✅ Environment variables configured
+- ✅ Production API endpoints tested
+- ✅ Mobile responsiveness verified
+- ✅ Error handling implemented
+- ✅ JWT authentication working
+- ✅ All TypeScript errors resolved
+
+### Deployment Steps
+
+1. **Vercel (Recommended)**
+   ```bash
+   npm install -g vercel
+   vercel --prod
+   ```
+   Set environment variable: `NEXT_PUBLIC_API_URL=https://medassist-23zx.onrender.com`
+
+2. **Manual Build**
+   ```bash
+   npm run build
+   npm run start
+   ```
+
+### Post-MVP Enhancements
+
+- [ ] WebSocket for real-time updates (replace polling)
+- [ ] Analytics dashboard with charts
 - [ ] Patient management module
-- [ ] Appointment scheduling
+- [ ] Appointment scheduling integration
 - [ ] Dark mode support
-- [ ] Export reports
+- [ ] Export reports (PDF/CSV)
 - [ ] Multi-clinic support
+- [ ] Push notifications
+- [ ] Advanced search filters
+- [ ] Conversation tagging system
 
 ## 📄 License
 
