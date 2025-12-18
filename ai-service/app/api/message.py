@@ -74,17 +74,25 @@ async def process_message(request: ProcessMessageRequest):
                 timestamp=request.timestamp
             )
         
-        # Step 3: Slot Filling
+        # Step 3: Get existing conversation state
+        conversation_manager = get_conversation_manager()
+        session = conversation_manager.get_session(request.patient_id)
+        current_slots = session.get("slots", {}) if session else {}
+        
+        # Step 4: Slot Filling (merge with existing slots)
         slot_filler = get_slot_filler()
-        extracted_data = slot_filler.extract_slots(
+        new_slots = slot_filler.extract_slots(
             message=request.message,
-            intent=intent_result.intent
+            intent=intent_result.intent,
+            current_slots=current_slots
         )
+        
+        # Merge new slots with existing ones
+        extracted_data = {**current_slots, **new_slots}
         
         logger.info(f"Extracted slots: {list(extracted_data.keys())}")
         
-        # Step 4: Conversation Management
-        conversation_manager = get_conversation_manager()
+        # Step 5: Update Conversation Management
         conversation_manager.update_session(
             patient_id=request.patient_id,
             user_message=request.message,
@@ -95,7 +103,7 @@ async def process_message(request: ProcessMessageRequest):
         # Get missing slots
         missing_slots = slot_filler.get_missing_slots(intent_result.intent, extracted_data)
         
-        # Step 5: Triage Scoring (for symptom inquiry)
+        # Step 6: Triage Scoring (for symptom inquiry)
         triage_level = None
         if intent_result.intent == IntentType.SYMPTOM_INQUIRY:
             symptom_intake = get_symptom_intake_agent()
@@ -111,7 +119,7 @@ async def process_message(request: ProcessMessageRequest):
                 triage_level = TriageLevel(triage_result["triage_level"])
                 logger.info(f"Triage level: {triage_level.value}")
         
-        # Step 6: Generate Response
+        # Step 7: Generate Response
         if missing_slots:
             # Ask for missing information
             response_text = _generate_slot_collection_response(
