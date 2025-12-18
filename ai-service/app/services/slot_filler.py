@@ -8,8 +8,12 @@ from typing import Dict, Any, Optional, List, Set
 from datetime import datetime
 from loguru import logger
 from enum import Enum
+import json
+import re
 
+from groq import Groq
 from app.models.schemas import IntentType
+from app.config import settings
 
 
 class SlotStatus(str, Enum):
@@ -75,9 +79,31 @@ class SlotFiller:
         "symptoms": "What symptoms are you experiencing right now?",
     }
     
-    def __init__(self):
-        """Initialize slot filler"""
-        logger.info("SlotFiller initialized")
+    def __init__(self, use_llm: bool = True):
+        """
+        Initialize slot filler
+        
+        Args:
+            use_llm: Whether to use LLM for slot extraction (default: True)
+        """
+        self.use_llm = use_llm
+        self.groq_client = None
+        
+        if self.use_llm:
+            try:
+                groq_api_key = settings.groq_api_key
+                if groq_api_key:
+                    self.groq_client = Groq(api_key=groq_api_key)
+                    logger.info("SlotFiller initialized with LLM support")
+                else:
+                    logger.warning("GROQ_API_KEY not found, using rule-based extraction")
+                    self.use_llm = False
+            except Exception as e:
+                logger.error(f"Failed to initialize Groq: {e}")
+                self.use_llm = False
+        
+        if not self.use_llm:
+            logger.info("SlotFiller initialized with rule-based extraction")
     
     def extract_slots(
         self,
@@ -86,7 +112,7 @@ class SlotFiller:
         current_slots: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Extract slot values from message
+        Extract slot values from message using LLM or rule-based fallback
         
         Args:
             message: Patient's message
@@ -99,6 +125,16 @@ class SlotFiller:
         if current_slots is None:
             current_slots = {}
         
+        # Try LLM extraction first
+        if self.use_llm and self.groq_client:
+            try:
+                extracted = self._extract_slots_with_llm(message, intent, current_slots)
+                logger.info(f"LLM extracted slots: {extracted}")
+                return extracted
+            except Exception as e:
+                logger.error(f"LLM extraction failed, falling back to rules: {e}")
+        
+        # Fallback to rule-based extraction
         message_lower = message.lower()
         extracted = {}
         
@@ -119,8 +155,99 @@ class SlotFiller:
         # Merge with current slots (new values override)
         current_slots.update(extracted)
         
-        logger.info(f"Extracted slots: {extracted}")
+        logger.info(f"Rule-based extracted slots: {extracted}")
         return current_slots
+    
+    def _extract_slots_with_llm(
+        self,
+        message: str,
+        intent: IntentType,
+        current_slots: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Use LLM to extract slots from message
+        
+        Args:
+            message: Patient's message
+            intent: Classified intent
+            current_slots: Already filled slots
+            
+        Returns:
+            Dictionary with all slots (current + newly extracted)
+        """
+        # Get required and optional slots for this intent
+        intent_config = self.INTENT_SLOTS.get(intent, {})
+        required_slots = intent_config.get("required", [])
+        optional_slots = intent_config.get("optional", [])
+        
+        # Build prompt for LLM
+        prompt = f"""You are a medical assistant extracting information from patient messages.
+
+Intent: {intent.value}
+Patient message: "{message}"
+
+Required information to extract:
+{', '.join(required_slots)}
+
+Optional information to extract:
+{', '.join(optional_slots)}
+
+Already collected information:
+{json.dumps(current_slots, indent=2)}
+
+Extract ONLY new information from the current message. Return JSON with extracted values.
+If information is already collected, include it in the response.
+Use null for missing values.
+
+Examples:
+- "tomorrow at 2pm" → {{"date": "tomorrow", "time": "2pm"}}
+- "I need paracetamol" → {{"medication_name": "paracetamol"}}
+- "headache since yesterday" → {{"primary_symptom": "headache", "duration": "since yesterday"}}
+
+Return ONLY valid JSON, no explanation."""
+
+        try:
+            # Call Groq API
+            response = self.groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You extract structured medical information from patient messages. Return only valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            llm_output = response.choices[0].message.content.strip()
+            logger.debug(f"LLM output: {llm_output}")
+            
+            # Parse JSON response
+            # Remove markdown code blocks if present
+            llm_output = re.sub(r'```json\s*|\s*```', '', llm_output)
+            
+            extracted_slots = json.loads(llm_output)
+            
+            # Merge with current slots (LLM output takes precedence for non-null values)
+            result = {**current_slots}
+            for key, value in extracted_slots.items():
+                if value is not None and value != "":
+                    result[key] = value
+            
+            return result
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM JSON response: {e}")
+            logger.debug(f"LLM raw output: {llm_output}")
+            raise
+        except Exception as e:
+            logger.error(f"LLM slot extraction error: {e}")
+            raise
     
     def _extract_appointment_slots(self, message: str) -> Dict[str, Any]:
         """Extract appointment-related slots"""
