@@ -7,6 +7,11 @@ Uses evidence-based triage algorithms adapted for Nigerian healthcare context.
 from typing import Dict, Any, Optional, List
 from enum import Enum
 from loguru import logger
+import json
+import re
+
+from groq import Groq
+from app.config import settings
 
 
 class TriageLevel(str, Enum):
@@ -88,9 +93,31 @@ class TriageScorer:
         "upper_respiratory": ["cough", "sore throat", "runny nose", "mild fever"]
     }
     
-    def __init__(self):
-        """Initialize triage scorer"""
-        logger.info("TriageScorer initialized")
+    def __init__(self, use_llm: bool = True):
+        """
+        Initialize triage scorer
+        
+        Args:
+            use_llm: Whether to use LLM for intelligent triage scoring
+        """
+        self.use_llm = use_llm
+        self.groq_client = None
+        
+        if self.use_llm:
+            try:
+                groq_api_key = settings.groq_api_key
+                if groq_api_key:
+                    self.groq_client = Groq(api_key=groq_api_key)
+                    logger.info("TriageScorer initialized with LLM support")
+                else:
+                    logger.warning("GROQ_API_KEY not found, using rule-based triage")
+                    self.use_llm = False
+            except Exception as e:
+                logger.error(f"Failed to initialize Groq: {e}")
+                self.use_llm = False
+        
+        if not self.use_llm:
+            logger.info("TriageScorer initialized with rule-based triage")
     
     def calculate_score(
         self,
@@ -99,7 +126,7 @@ class TriageScorer:
         patient_metadata: Optional[Dict[str, Any]] = None
     ) -> int:
         """
-        Calculate triage score (1-10)
+        Calculate triage score (1-10) using LLM or rule-based fallback
         
         Args:
             symptom_data: Collected symptom information
@@ -108,6 +135,115 @@ class TriageScorer:
             
         Returns:
             Score from 1 (low priority) to 10 (critical)
+        """
+        # Try LLM scoring first
+        if self.use_llm and self.groq_client:
+            try:
+                score = self._calculate_score_with_llm(symptom_data, vital_signs, patient_metadata)
+                logger.info(f"LLM calculated triage score: {score}/10")
+                return score
+            except Exception as e:
+                logger.error(f"LLM triage failed, falling back to rules: {e}")
+        
+        # Fallback to rule-based scoring
+        return self._calculate_score_rule_based(symptom_data, vital_signs, patient_metadata)
+    
+    def _calculate_score_with_llm(
+        self,
+        symptom_data: Dict[str, Any],
+        vital_signs: Optional[Dict[str, Any]],
+        patient_metadata: Optional[Dict[str, Any]]
+    ) -> int:
+        """
+        Use LLM to intelligently assess triage urgency
+        
+        Returns:
+            Triage score 1-10
+        """
+        # Build comprehensive patient picture
+        prompt = f"""You are a medical triage AI assistant. Analyze the patient's symptoms and assign a triage score from 1-10.
+
+TRIAGE SCORING GUIDE:
+- 9-10: CRITICAL - Life-threatening (chest pain, stroke, severe bleeding, can't breathe, suicide risk)
+- 7-8: HIGH - Urgent care needed within 1 hour (high fever >39°C, severe pain, moderate bleeding)
+- 4-6: MEDIUM - Semi-urgent, within 4 hours (persistent symptoms, moderate pain)
+- 1-3: LOW - Non-urgent, within 24 hours (minor symptoms, mild pain)
+
+PATIENT INFORMATION:
+Symptoms: {json.dumps(symptom_data, indent=2)}
+Vital Signs: {json.dumps(vital_signs if vital_signs else {}, indent=2)}
+Patient Info: {json.dumps(patient_metadata if patient_metadata else {}, indent=2)}
+
+CRITICAL RED FLAGS (automatic score 9-10):
+- Chest pain/pressure, especially with arm/jaw pain or shortness of breath
+- Difficulty breathing, can't breathe, gasping
+- Stroke symptoms: sudden weakness, face drooping, slurred speech
+- Severe bleeding, vomiting/coughing blood
+- Loss of consciousness, seizures
+- Suicidal thoughts
+- Severe head injury
+
+IMPORTANT CONTEXT:
+- This is for Nigerian healthcare setting
+- Consider Pidgin English expressions (e.g., "my chest dey pain me well well" = severe chest pain)
+- Fever with severe symptoms (>39°C with confusion/stiff neck) = higher priority
+- Sudden onset = higher priority than gradual
+
+Return ONLY a JSON object with:
+{{
+  "score": <number 1-10>,
+  "reasoning": "<brief explanation>",
+  "urgency_category": "<critical|high|medium|low>",
+  "red_flags": ["<any critical findings>"]
+}}"""
+
+        try:
+            response = self.groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a medical triage expert. Analyze symptoms and assign appropriate urgency scores. Be conservative - when in doubt, score higher for patient safety."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.2,  # Low temperature for consistent medical decisions
+                max_tokens=500
+            )
+            
+            llm_output = response.choices[0].message.content.strip()
+            logger.debug(f"LLM triage output: {llm_output}")
+            
+            # Parse JSON
+            llm_output = re.sub(r'```json\s*|\s*```', '', llm_output)
+            result = json.loads(llm_output)
+            
+            score = int(result.get("score", 5))
+            reasoning = result.get("reasoning", "")
+            red_flags = result.get("red_flags", [])
+            
+            logger.info(f"LLM triage: score={score}, reasoning={reasoning}")
+            if red_flags:
+                logger.warning(f"LLM detected red flags: {red_flags}")
+            
+            # Ensure score is within bounds
+            return max(1, min(10, score))
+            
+        except Exception as e:
+            logger.error(f"LLM triage error: {e}")
+            raise
+    
+    def _calculate_score_rule_based(
+        self,
+        symptom_data: Dict[str, Any],
+        vital_signs: Optional[Dict[str, Any]],
+        patient_metadata: Optional[Dict[str, Any]]
+    ) -> int:
+        """
+        Rule-based triage scoring (fallback)
         """
         score = 0
         
