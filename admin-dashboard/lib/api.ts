@@ -36,7 +36,7 @@ export interface LoginResponse {
 interface BackendConversation {
   id: string
   patientId: string
-  patientName: string
+  patientName: string | null  // Can be null if patient hasn't completed registration
   patientPhone: string
   triageLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
   status: 'ACTIVE' | 'RESOLVED' | 'CLOSED' | 'PENDING'
@@ -89,7 +89,7 @@ function transformConversation(conv: BackendConversation): Conversation {
   return {
     id: conv.id,
     patientId: conv.patientId,
-    patientName: conv.patientName,
+    patientName: conv.patientName || conv.patientPhone || 'Unknown Patient', // Fallback if name is null
     patientPhone: conv.patientPhone,
     clinicId: '', // Will be set from user context
     messages: [], // Messages come from detail endpoint
@@ -155,7 +155,20 @@ export const api = {
   getConversations: async (): Promise<Conversation[]> => {
     try {
       const response = await httpClient.get<BackendConversation[]>(API_ROUTES.CONVERSATIONS.LIST)
-      return response.map(transformConversation)
+      
+      // Validate and transform each conversation
+      const conversations = response
+        .filter(conv => {
+          // Skip conversations with missing critical data
+          if (!conv.id || !conv.patientPhone) {
+            console.warn('Skipping invalid conversation:', conv)
+            return false
+          }
+          return true
+        })
+        .map(transformConversation)
+      
+      return conversations
     } catch (error) {
       console.error('Failed to fetch conversations:', error)
       // Return empty array instead of throwing when backend is unavailable
