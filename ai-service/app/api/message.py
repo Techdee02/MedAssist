@@ -358,10 +358,10 @@ Return ONLY the response text, nothing else."""
                 "Your feedback has been forwarded to our management team."
             )
         
-    elif intent == IntentType.GENERAL_INQUIRY:
-        return (
-            "Thank you for your question. A staff member will get back to you "
-            "with the information you requested."
-        )
-    
-    return "Thank you for contacting us. We'll be in touch soon."
+        elif intent == IntentType.GENERAL_INQUIRY:
+            return (
+                "Thank you for your question. A staff member will get back to you "
+                "with the information you requested."
+            )
+        
+        return "Thank you for contacting us. We'll be in touch soon."
