@@ -57,6 +57,14 @@ export class HttpClient {
 
     // Handle non-2xx responses
     if (!response.ok) {
+      // Log full error details for debugging
+      console.error('API Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        data: data
+      })
+      
       let message = data?.message || data?.error || `HTTP ${response.status} error`
       
       // Handle common backend errors with user-friendly messages
@@ -75,9 +83,12 @@ export class HttpClient {
   }
 
   async get<T>(url: string, includeAuth: boolean = true): Promise<T> {
+    const headers = this.getHeaders(includeAuth)
+    console.log('🔍 GET Request:', { url, headers })
+    
     const response = await fetch(url, {
       method: 'GET',
-      headers: this.getHeaders(includeAuth),
+      headers: headers,
     })
     return this.handleResponse<T>(response)
   }
