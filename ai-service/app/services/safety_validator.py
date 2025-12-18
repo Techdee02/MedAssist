@@ -9,6 +9,11 @@ from enum import Enum
 from typing import Dict, List, Optional, Set
 from loguru import logger
 from datetime import datetime, timezone
+import json
+import re
+
+from groq import Groq
+from app.config import settings
 
 
 class ViolationType(str, Enum):
@@ -143,10 +148,32 @@ class SafetyValidator:
         "go to the hospital", "see a doctor"
     }
     
-    def __init__(self):
-        """Initialize safety validator"""
+    def __init__(self, use_llm: bool = True):
+        """
+        Initialize safety validator
+        
+        Args:
+            use_llm: Whether to use LLM for intelligent safety validation
+        """
         self.violation_log: List[Dict] = []
-        logger.info("SafetyValidator initialized")
+        self.use_llm = use_llm
+        self.groq_client = None
+        
+        if self.use_llm:
+            try:
+                groq_api_key = settings.groq_api_key
+                if groq_api_key:
+                    self.groq_client = Groq(api_key=groq_api_key)
+                    logger.info("SafetyValidator initialized with LLM support")
+                else:
+                    logger.warning("GROQ_API_KEY not found, using rule-based validation")
+                    self.use_llm = False
+            except Exception as e:
+                logger.error(f"Failed to initialize Groq: {e}")
+                self.use_llm = False
+        
+        if not self.use_llm:
+            logger.info("SafetyValidator initialized with rule-based validation")
     
     def validate_response(
         self,
@@ -156,7 +183,7 @@ class SafetyValidator:
         triage_level: Optional[str] = None
     ) -> SafetyResult:
         """
-        Validate AI response for safety issues.
+        Validate AI response for safety issues using LLM or rule-based fallback.
         
         Args:
             user_message: User's input message
@@ -166,6 +193,144 @@ class SafetyValidator:
             
         Returns:
             SafetyResult with validation outcome
+        """
+        # Try LLM validation first
+        if self.use_llm and self.groq_client:
+            try:
+                result = self._validate_with_llm(user_message, ai_response, intent, triage_level)
+                logger.info(f"LLM safety validation: {'SAFE' if result.is_safe else 'UNSAFE'} - {result.reasoning}")
+                return result
+            except Exception as e:
+                logger.error(f"LLM safety validation failed, falling back to rules: {e}")
+        
+        # Fallback to rule-based validation
+        return self._validate_rule_based(user_message, ai_response, intent, triage_level)
+    
+    def _validate_with_llm(
+        self,
+        user_message: str,
+        ai_response: str,
+        intent: Optional[str],
+        triage_level: Optional[str]
+    ) -> SafetyResult:
+        """
+        Use LLM to intelligently validate response safety
+        """
+        prompt = f"""You are a medical AI safety validator. Analyze if this AI response is safe and appropriate.
+
+USER MESSAGE: "{user_message}"
+AI RESPONSE: "{ai_response}"
+INTENT: {intent or 'unknown'}
+TRIAGE LEVEL: {triage_level or 'unknown'}
+
+SAFETY RULES:
+1. NEVER diagnose (e.g., "you have malaria", "this is typhoid")
+2. NEVER prescribe medication (e.g., "take paracetamol", "use this drug")
+3. NEVER discourage seeking medical care (e.g., "no need for doctor", "just rest")
+4. ALWAYS stay within triage/intake scope (collect information only)
+5. ALWAYS be transparent (e.g., "I'm collecting information for the clinic")
+
+ALLOWED:
+- Asking questions to collect symptom details
+- Acknowledging symptoms without diagnosing
+- Recommending to seek immediate care for emergencies
+- Providing appointment scheduling
+- General health education (non-diagnostic)
+
+PROHIBITED:
+- Direct diagnosis: "you have cancer", "this is malaria"
+- Prescribing: "take this drug", "use 500mg paracetamol"
+- Medical advice: "you don't need a doctor", "just use herbs"
+- Treatment recommendations beyond "see a doctor immediately"
+
+Nigerian/Pidgin context:
+- "your sickness na malaria" = DIAGNOSIS (prohibited)
+- "make you take this drug" = PRESCRIPTION (prohibited)
+- "e be like say you get headache" = ACKNOWLEDGMENT (allowed if followed by questions)
+
+Return ONLY JSON:
+{{
+  "is_safe": true/false,
+  "violations": ["diagnosis", "prescription", "dangerous_advice", "scope_exceeded"],
+  "action": "allow/warn/block/escalate",
+  "modified_response": "<safer version if needed or null>",
+  "reasoning": "<brief explanation>"
+}}"""
+
+        try:
+            response = self.groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a medical AI safety expert. Evaluate responses strictly - when in doubt, flag as unsafe. Patient safety is paramount."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.1,  # Very low temperature for consistent safety decisions
+                max_tokens=500
+            )
+            
+            llm_output = response.choices[0].message.content.strip()
+            logger.debug(f"LLM safety output: {llm_output}")
+            
+            # Parse JSON
+            llm_output = re.sub(r'```json\s*|\s*```', '', llm_output)
+            result = json.loads(llm_output)
+            
+            is_safe = result.get("is_safe", False)
+            violations_str = result.get("violations", [])
+            action_str = result.get("action", "block")
+            modified = result.get("modified_response")
+            reasoning = result.get("reasoning", "")
+            
+            # Convert violations to enum
+            violation_map = {
+                "diagnosis": ViolationType.DIAGNOSIS,
+                "prescription": ViolationType.PRESCRIPTION,
+                "dangerous_advice": ViolationType.DANGEROUS_ADVICE,
+                "scope_exceeded": ViolationType.SCOPE_EXCEEDED,
+                "medical_advice": ViolationType.MEDICAL_ADVICE
+            }
+            violations = [violation_map.get(v, ViolationType.SCOPE_EXCEEDED) for v in violations_str if v in violation_map]
+            
+            # Convert action to enum
+            action_map = {
+                "allow": SafetyAction.LOG,
+                "warn": SafetyAction.WARN,
+                "block": SafetyAction.BLOCK,
+                "escalate": SafetyAction.ESCALATE
+            }
+            action = action_map.get(action_str, SafetyAction.BLOCK)
+            
+            # Add disclaimer for warnings
+            disclaimer = self._get_disclaimer() if action in [SafetyAction.WARN, SafetyAction.LOG] else None
+            
+            return SafetyResult(
+                is_safe=is_safe,
+                violations=violations,
+                action=action,
+                modified_response=modified if modified else ai_response,
+                disclaimer=disclaimer,
+                reasoning=reasoning
+            )
+            
+        except Exception as e:
+            logger.error(f"LLM safety validation error: {e}")
+            raise
+    
+    def _validate_rule_based(
+        self,
+        user_message: str,
+        ai_response: str,
+        intent: Optional[str],
+        triage_level: Optional[str]
+    ) -> SafetyResult:
+        """
+        Rule-based safety validation (fallback)
         """
         violations = []
         reasoning_parts = []

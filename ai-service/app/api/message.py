@@ -7,7 +7,10 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from typing import Dict, Any
 import uuid
+import json
+import re
 
+from groq import Groq
 from app.models.schemas import (
     ProcessMessageRequest,
     ProcessMessageResponse,
@@ -176,32 +179,78 @@ def _generate_slot_collection_response(
     missing_slots: list,
     extracted_data: Dict[str, Any]
 ) -> str:
-    """Generate response to collect missing slot information"""
+    """Generate intelligent response to collect missing slot information using LLM"""
     
-    if intent == IntentType.APPOINTMENT_BOOKING:
-        if "date" in missing_slots:
-            return "What date would you like to schedule your appointment?"
-        if "time" in missing_slots:
-            return "What time works best for you?"
-        if "reason" in missing_slots:
-            return "What is the reason for your visit?"
-            
-    elif intent == IntentType.MEDICATION_REFILL:
-        if "medication_name" in missing_slots:
-            return "Which medication do you need to refill?"
-        if "dosage" in missing_slots:
-            return "What is the dosage of your medication?"
-            
-    elif intent == IntentType.SYMPTOM_INQUIRY:
-        if "symptom" in missing_slots:
-            return "Can you describe your main symptom?"
-        if "duration" in missing_slots:
-            return "How long have you been experiencing this?"
-        if "severity" in missing_slots:
-            return "On a scale of 1-10, how severe is it?"
-    
-    # Generic fallback
-    return f"I need a bit more information. Can you tell me more about {missing_slots[0].replace('_', ' ')}?"
+    try:
+        groq_client = Groq(api_key=settings.groq_api_key)
+        
+        prompt = f"""You are a friendly medical assistant collecting patient information for a clinic.
+
+Intent: {intent.value}
+Already collected: {json.dumps(extracted_data, indent=2)}
+Still need: {', '.join(missing_slots)}
+
+Generate a natural, empathetic question to collect the FIRST missing piece of information.
+
+GUIDELINES:
+- Ask about ONE thing at a time (the first item in the missing list)
+- Be conversational and warm
+- Use simple, clear language
+- Consider Nigerian context (some patients speak Pidgin)
+- Don't sound robotic or repetitive
+
+EXAMPLES:
+Missing "date" → "What date works best for you? You can say something like 'tomorrow' or 'next Monday'"
+Missing "severity" → "On a scale of 1 to 10, how bad is the pain? (1 is very mild, 10 is the worst pain you've ever felt)"
+Missing "primary_symptom" → "I'd like to help you. Can you tell me what symptoms you're experiencing?"
+
+Return ONLY the question text, nothing else."""
+
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a compassionate medical intake assistant. Ask clear, friendly questions."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=150
+        )
+        
+        return response.choices[0].message.content.strip()
+        
+    except Exception as e:
+        logger.error(f"LLM response generation failed, using template: {e}")
+        # Fallback to templates
+        if intent == IntentType.APPOINTMENT_BOOKING:
+            if "date" in missing_slots:
+                return "What date would you like to schedule your appointment?"
+            if "time" in missing_slots:
+                return "What time works best for you?"
+            if "reason" in missing_slots:
+                return "What is the reason for your visit?"
+                
+        elif intent == IntentType.MEDICATION_REFILL:
+            if "medication_name" in missing_slots:
+                return "Which medication do you need to refill?"
+            if "dosage" in missing_slots:
+                return "What is the dosage of your medication?"
+                
+        elif intent == IntentType.SYMPTOM_INQUIRY:
+            if "symptom" in missing_slots:
+                return "Can you describe your main symptom?"
+            if "duration" in missing_slots:
+                return "How long have you been experiencing this?"
+            if "severity" in missing_slots:
+                return "On a scale of 1-10, how severe is it?"
+        
+        # Generic fallback
+        return f"I need a bit more information. Can you tell me more about {missing_slots[0].replace('_', ' ')}?"
 
 
 def _generate_completion_response(
@@ -209,51 +258,105 @@ def _generate_completion_response(
     extracted_data: Dict[str, Any],
     triage_level: TriageLevel = None
 ) -> str:
-    """Generate completion response when all info collected"""
+    """Generate intelligent completion response using LLM"""
     
-    if intent == IntentType.APPOINTMENT_BOOKING:
-        date = extracted_data.get("date", "your preferred date")
-        time = extracted_data.get("time", "your preferred time")
-        return (
-            f"I'll help you book an appointment for {date} at {time}. "
-            f"A staff member will confirm your appointment shortly."
+    try:
+        groq_client = Groq(api_key=settings.groq_api_key)
+        
+        prompt = f"""You are a medical assistant who has finished collecting patient information.
+
+Intent: {intent.value}
+Collected information: {json.dumps(extracted_data, indent=2)}
+Triage urgency: {triage_level.value if triage_level else 'not assessed'}
+
+Generate a warm, professional closing message that:
+1. Acknowledges the information received
+2. Explains what happens next
+3. Provides appropriate urgency guidance if triage_level is CRITICAL or HIGH
+4. Reassures the patient
+
+SAFETY RULES (CRITICAL):
+- NEVER diagnose ("you have malaria", "this is typhoid")
+- NEVER prescribe medication ("take paracetamol", "use this drug")
+- ONLY say what the next steps are (appointment, nurse review, emergency visit)
+
+EXAMPLES:
+
+For CRITICAL triage:
+"Thank you for sharing this information. Based on what you've described, this needs immediate medical attention. Please go to the nearest emergency room or call emergency services right away. Do not delay."
+
+For appointment booking:
+"Perfect! I've registered your appointment request for [date] at [time] for [reason]. One of our staff will confirm the details with you shortly via WhatsApp."
+
+For symptom inquiry (LOW/MEDIUM):
+"Thank you for providing these details about your symptoms. A nurse will review your case and get back to you with guidance. If your symptoms worsen, please contact us immediately."
+
+Return ONLY the response text, nothing else."""
+
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a professional medical assistant. Be warm but never diagnose or prescribe."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.6,
+            max_tokens=250
         )
         
-    elif intent == IntentType.MEDICATION_REFILL:
-        medication = extracted_data.get("medication_name", "your medication")
-        return (
-            f"I've registered your request to refill {medication}. "
-            f"Our pharmacy will prepare it and contact you when ready."
-        )
+        return response.choices[0].message.content.strip()
         
-    elif intent == IntentType.SYMPTOM_INQUIRY:
-        if triage_level == TriageLevel.CRITICAL:
+    except Exception as e:
+        logger.error(f"LLM completion response failed, using template: {e}")
+        # Fallback to templates
+        if intent == IntentType.APPOINTMENT_BOOKING:
+            date = extracted_data.get("date", "your preferred date")
+            time = extracted_data.get("time", "your preferred time")
             return (
-                "⚠️ Based on your symptoms, you should seek immediate medical attention. "
-                "Please visit the emergency room or call emergency services."
-            )
-        elif triage_level == TriageLevel.HIGH:
-            return (
-                "Your symptoms require prompt medical attention. "
-                "We recommend scheduling an appointment today or visiting urgent care."
-            )
-        elif triage_level == TriageLevel.MEDIUM:
-            return (
-                "Thank you for sharing your symptoms. "
-                "We recommend scheduling an appointment within the next few days. "
-                "A healthcare provider will review your case."
-            )
-        else:
-            return (
-                "Thank you for the information. Your symptoms appear manageable. "
-                "We'll have a nurse review your case and provide guidance."
+                f"I'll help you book an appointment for {date} at {time}. "
+                f"A staff member will confirm your appointment shortly."
             )
             
-    elif intent == IntentType.FEEDBACK_COMPLAINT:
-        return (
-            "Thank you for your feedback. We take all comments seriously. "
-            "Your feedback has been forwarded to our management team."
-        )
+        elif intent == IntentType.MEDICATION_REFILL:
+            medication = extracted_data.get("medication_name", "your medication")
+            return (
+                f"I've registered your request to refill {medication}. "
+                f"Our pharmacy will prepare it and contact you when ready."
+            )
+            
+        elif intent == IntentType.SYMPTOM_INQUIRY:
+            if triage_level == TriageLevel.CRITICAL:
+                return (
+                    "⚠️ Based on your symptoms, you should seek immediate medical attention. "
+                    "Please visit the emergency room or call emergency services."
+                )
+            elif triage_level == TriageLevel.HIGH:
+                return (
+                    "Your symptoms require prompt medical attention. "
+                    "We recommend scheduling an appointment today or visiting urgent care."
+                )
+            elif triage_level == TriageLevel.MEDIUM:
+                return (
+                    "Thank you for sharing your symptoms. "
+                    "We recommend scheduling an appointment within the next few days. "
+                    "A healthcare provider will review your case."
+                )
+            else:
+                return (
+                    "Thank you for the information. Your symptoms appear manageable. "
+                    "We'll have a nurse review your case and provide guidance."
+                )
+                
+        elif intent == IntentType.FEEDBACK_COMPLAINT:
+            return (
+                "Thank you for your feedback. We take all comments seriously. "
+                "Your feedback has been forwarded to our management team."
+            )
         
     elif intent == IntentType.GENERAL_INQUIRY:
         return (
