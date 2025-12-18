@@ -67,18 +67,10 @@ async def extract_document(
         # Extract document data
         document_extractor = get_document_extractor()
         
-        # Determine extraction method based on file type
-        if file_ext == ".pdf":
-            extracted_data = await document_extractor.extract_from_pdf(
-                pdf_data=content,
-                document_type=document_type
-            )
-        else:
-            # Image formats (png, jpg, jpeg)
-            extracted_data = await document_extractor.extract_from_image(
-                image_data=content,
-                document_type=document_type
-            )
+        extracted_data = document_extractor.extract_from_document(
+            document_bytes=content,
+            document_type=document_type
+        )
         
         # Add metadata
         extraction_id = str(uuid.uuid4())
