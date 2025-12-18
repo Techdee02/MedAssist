@@ -60,7 +60,7 @@ export function ConversationList({ conversations, title = "Patient Queue", compa
                   {!compact && (
                     <>
                       <p className="line-clamp-2 text-xs md:text-sm text-gray-600">
-                        {conv.messages[conv.messages.length - 1]?.content || "No messages"}
+                        {conv.preview || "No messages"}
                       </p>
                       <div className="flex items-center gap-2 md:gap-3 text-xs text-gray-500">
                         <Clock className="h-3 w-3" />

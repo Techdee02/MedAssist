@@ -26,6 +26,7 @@ export interface Conversation {
   patientPhone: string;
   clinicId: string;
   messages: Message[];
+  preview?: string; // Last message preview for list view
   triageLevel: TriageLevel;
   status: 'active' | 'resolved';
   lastMessageAt: string;

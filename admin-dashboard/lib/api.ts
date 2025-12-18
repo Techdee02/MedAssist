@@ -93,6 +93,7 @@ function transformConversation(conv: BackendConversation): Conversation {
     patientPhone: conv.patientPhone,
     clinicId: '', // Will be set from user context
     messages: [], // Messages come from detail endpoint
+    preview: conv.preview, // Preview of last message
     triageLevel: conv.triageLevel as TriageLevel,
     status: conv.status.toLowerCase() as 'active' | 'resolved',
     lastMessageAt: conv.lastMessageAt,
