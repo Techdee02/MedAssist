@@ -163,14 +163,12 @@ MedAssist is an **AI-powered healthcare assistant** that helps clinics, pharmaci
 9. ✅ AI Service with Groq LLM (deployed on Render)
 10. ✅ Multi-language translation (English ↔ Yoruba/Hausa/Igbo)
 11. ✅ Medical document extraction (OCR + structured data from images/PDFs)
-12. 📋 WhatsApp bot implementation guide (ready for backend integration)
+12. ✅ WhatsApp bot implementation guide
 
 ### Phase 2 (In Progress / Planned)
-- 🚧 WhatsApp Twilio integration (guide complete, awaiting implementation)
 - 🔄 Automated appointment reminders via WhatsApp/SMS
 - 🔄 Complaint clustering & trend analytics
 - 🔄 Google Sheets / Excel integration
-- 🔄 Advanced document analysis (medication extraction, lab result parsing)
 
 ---
 
@@ -263,14 +261,6 @@ export GROQ_API_KEY=your_groq_api_key
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### WhatsApp Bot Implementation
-
-Backend developers should refer to [WHATSAPP_BOT_IMPLEMENTATION.md](WHATSAPP_BOT_IMPLEMENTATION.md) for complete integration guide including:
-- Twilio setup and configuration
-- Webhook implementation
-- Patient registration flow
-- AI service integration
-- Full Java/Spring Boot code examples
 
 ### Production Deployments
 
@@ -278,7 +268,7 @@ Backend developers should refer to [WHATSAPP_BOT_IMPLEMENTATION.md](WHATSAPP_BOT
 |---------|-----|---------------|
 | **Backend API** | https://medassist-23zx.onrender.com | [Swagger UI](https://medassist-23zx.onrender.com/swagger-ui/index.html) |
 | **AI Service** | https://medassist-ai-service.onrender.com | [API Docs](https://medassist-ai-service.onrender.com/docs) |
-| **Admin Dashboard** | *Coming Soon* | See [admin-dashboard/README.md](admin-dashboard/README.md) |
+| **Admin Dashboard** | https://med-assist-xi-liart.vercel.app | See [admin-dashboard/README.md](admin-dashboard/README.md) |
 
 ---
 
