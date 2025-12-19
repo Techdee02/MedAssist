@@ -80,7 +80,7 @@ async def process_message(request: ProcessMessageRequest):
         # Step 3: Get existing conversation state
         conversation_manager = get_conversation_manager()
         session = conversation_manager.get_session(request.patient_id)
-        current_slots = session.get("slots", {}) if session else {}
+        current_slots = session.filled_slots if session else {}
         
         # Step 4: Slot Filling (merge with existing slots)
         slot_filler = get_slot_filler()
