@@ -107,7 +107,9 @@ async def process_message(request: ProcessMessageRequest):
         missing_slots = slot_filler.get_missing_slots(intent_result.intent, extracted_data)
         
         # Step 6: Triage Scoring (for symptom inquiry)
-        triage_level = None
+        # Default to LOW for non-medical inquiries, None will be set for symptom inquiries without enough data
+        triage_level = TriageLevel.LOW if intent_result.intent != IntentType.SYMPTOM_INQUIRY else None
+        
         if intent_result.intent == IntentType.SYMPTOM_INQUIRY:
             symptom_intake = get_symptom_intake_agent()
             symptom_data = symptom_intake.extract_symptom_info(
@@ -121,6 +123,10 @@ async def process_message(request: ProcessMessageRequest):
                 triage_result = triage_scorer.triage(symptom_data)
                 triage_level = TriageLevel(triage_result["triage_level"])
                 logger.info(f"Triage level: {triage_level.value}")
+            else:
+                # Default to MEDIUM while collecting symptom information
+                triage_level = TriageLevel.MEDIUM
+                logger.info("Insufficient symptom data for triage, defaulting to MEDIUM")
         
         # Step 7: Generate Response
         if missing_slots:
