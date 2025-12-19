@@ -55,9 +55,14 @@ export default function Home() {
               Get Started
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <button className="px-8 py-4 bg-white text-gray-700 rounded-xl border-2 border-gray-200 hover:border-blue-600 hover:shadow-xl transition-all duration-200 font-semibold text-lg">
+            <a 
+              href="https://drive.google.com/file/d/1RRJcZTuI-Z3EdVwEbxcsh_BW9gxDE27W/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-4 bg-white text-gray-700 rounded-xl border-2 border-gray-200 hover:border-blue-600 hover:shadow-xl transition-all duration-200 font-semibold text-lg"
+            >
               Watch Demo
-            </button>
+            </a>
           </div>
 
           {/* Stats */}
