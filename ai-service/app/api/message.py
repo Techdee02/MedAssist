@@ -321,14 +321,12 @@ Return ONLY the response text, nothing else."""
                 f"I'll help you book an appointment for {date} at {time}. "
                 f"A staff member will confirm your appointment shortly."
             )
-            
         elif intent == IntentType.MEDICATION_REFILL:
             medication = extracted_data.get("medication_name", "your medication")
             return (
                 f"I've registered your request to refill {medication}. "
                 f"Our pharmacy will prepare it and contact you when ready."
             )
-            
         elif intent == IntentType.SYMPTOM_INQUIRY:
             if triage_level == TriageLevel.CRITICAL:
                 return (
@@ -351,13 +349,11 @@ Return ONLY the response text, nothing else."""
                     "Thank you for the information. Your symptoms appear manageable. "
                     "We'll have a nurse review your case and provide guidance."
                 )
-                
         elif intent == IntentType.FEEDBACK_COMPLAINT:
             return (
                 "Thank you for your feedback. We take all comments seriously. "
                 "Your feedback has been forwarded to our management team."
             )
-        
         elif intent == IntentType.GENERAL_INQUIRY:
             return (
                 "Thank you for your question. A staff member will get back to you "
